@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Titan Tenets Rune Puzzle (EPOCH)</title>
+  <style>
+    :root{
+      /* === Decoration hooks (tweak these) === */
+      --bg: #0b0f14;
+      --panel: #101826;
+      --panel2: #0e1622;
+      --ink: #d9e6ff;
+      --muted: #93a4c7;
+      --accent: #7bd3ff;
+      --accent2: #ffd27b;
+      --danger: #ff6b6b;
+
+      --ringSize: 460px;
+      --slotSize: 110px;
+      --centerSize: 110px;
+
+      --border: rgba(123, 211, 255, 0.25);
+      --shadow: 0 12px 30px rgba(0,0,0,.45);
+      --radius: 18px;
+      --runeFont: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: var(--runeFont);
+      background: radial-gradient(1200px 700px at 50% 15%, rgba(123,211,255,0.12), transparent 55%),
+                  radial-gradient(1000px 600px at 20% 80%, rgba(255,210,123,0.08), transparent 50%),
+                  var(--bg);
+      color: var(--ink);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 24px;
+    }
+
+    .wrap{
+      width:min(980px, 100%);
+      display:flex;
+      justify-content:center;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(16,24,38,.92), rgba(14,22,34,.92));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .header{
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid rgba(123,211,255,0.16);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    h1{
+      margin:0;
+      font-size: 18px;
+      letter-spacing: 0.4px;
+      font-weight: 650;
+    }
+    .sub{
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.35;
+    }
+
+
+    .arena{
+      padding: 18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position: relative;
+    }
+
+    .ring{
+      width: var(--ringSize);
+      height: var(--ringSize);
+      border-radius: 999px;
+      position: relative;
+      border: 1px solid rgba(123,211,255,0.22);
+      background: radial-gradient(circle at 50% 50%,
+        rgba(123,211,255,0.08), rgba(11,15,20,0.65) 55%, rgba(11,15,20,0.25) 85%);
+      box-shadow: inset 0 0 0 2px rgba(123,211,255,0.06);
+      cursor: pointer;
+      transition: transform 400ms ease;
+      transform-origin: center center;
+    }
+    
+    .swapRing{
+      /* Hidden ring for swap animation */
+      width: var(--ringSize);
+      height: var(--ringSize);
+      border-radius: 999px;
+      position: absolute;
+      left: 50%;
+      top: 70%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      /* No opacity - containers inside should be visible */
+      transition: transform 400ms ease;
+      transform-origin: center center;
+    }
+    .ring:hover{
+      border-color: rgba(123,211,255,0.35);
+      background: radial-gradient(circle at 50% 50%,
+        rgba(123,211,255,0.12), rgba(11,15,20,0.65) 55%, rgba(11,15,20,0.25) 85%);
+    }
+
+    /* Decorative “Titan circuit” ticks */
+    .ring:before{
+      content:"";
+      position:absolute; inset: 18px;
+      border-radius:999px;
+      border: 1px dashed rgba(123,211,255,0.20);
+      opacity:.55;
+      pointer-events:none;
+    }
+
+    .slot{
+      width: var(--slotSize);
+      height: var(--slotSize);
+      position:absolute;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transform: translate(-50%, -50%);
+      transition: left 400ms ease, top 400ms ease, transform 400ms ease;
+      /* Container rotation will be applied via inline style */
+    }
+    
+    .slot.swapping {
+      transition: transform 400ms ease;
+      z-index: 10;
+    }
+
+    .slot.top    { left: 50%; top: 10%; }
+    .slot.right  { left: 90%; top: 50%; }
+    .slot.bottom { left: 50%; top: 90%; }
+    .slot.left   { left: 10%; top: 50%; }
+
+    .slot.center{
+      left: 50%; top: 50%;
+      width: var(--centerSize);
+      height: var(--centerSize);
+    }
+
+    .rune{
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(123,211,255,0.25);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.08));
+      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      user-select:none;
+      transition: transform 180ms ease;
+      cursor: pointer;
+    }
+    .rune:hover{
+      border-color: rgba(123,211,255,0.4);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.12));
+    }
+
+    .rune .glyph{
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: rgba(217,230,255,0.92);
+      text-shadow: 0 0 22px rgba(123,211,255,0.22);
+      /* Icon no longer rotates - container rotates instead */
+    }
+
+    /* Orientation notch for visual clarity */
+    .rune:after{
+      content:"";
+      position:absolute;
+      top: 8px; left: 50%;
+      width: 28px; height: 6px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: rgba(255,210,123,0.65);
+      box-shadow: 0 0 18px rgba(255,210,123,0.18);
+      opacity:.9;
+    }
+
+    /* little position labels */
+    .posLabel{
+      position:absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: rgba(147,164,199,0.9);
+      letter-spacing: 0.4px;
+    }
+
+    .slot.swapping {
+      transition: transform 400ms ease;
+      z-index: 10;
+    }
+
+    .swapControl{
+      position: absolute;
+      left: 50%;
+      top: 70%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,210,123,0.4);
+      background: rgba(255,210,123,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .swapControl:hover{
+      border-color: rgba(255,210,123,0.6);
+      background: rgba(255,210,123,0.18);
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    .swapControl:before{
+      content: "⇵";
+      font-size: 24px;
+      color: rgba(255,230,185,0.9);
+    }
+
+    .footerNote{
+      padding: 0 18px 18px;
+      color: rgba(147,164,199,0.8);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 940px){
+      .ring{ width:min(460px, 90vw); height:min(460px, 90vw); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Puzzle board -->
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1>Titan Tenets Alignment</h1>
+          <div class="sub">
+            Click runes to rotate them. Click the ring to rotate all. Click the control between bottom and center to swap them.
+          </div>
+        </div>
+      </div>
+
+      <div class="arena">
+        <div class="ring" id="ring" aria-label="Puzzle ring">
+          <div class="slot" id="containerO" data-container="O">
+            <div class="rune" id="runeO"><div class="glyph" id="glyphO">?</div><div class="posLabel">O</div></div>
+          </div>
+          <div class="slot" id="containerC" data-container="C">
+            <div class="rune" id="runeC"><div class="glyph" id="glyphC">?</div><div class="posLabel">C</div></div>
+          </div>
+          <div class="slot" id="containerH" data-container="H">
+            <div class="rune" id="runeH"><div class="glyph" id="glyphH">?</div><div class="posLabel">H</div></div>
+          </div>
+          <div class="slot" id="containerP" data-container="P">
+            <div class="rune" id="runeP"><div class="glyph" id="glyphP">?</div><div class="posLabel">P</div></div>
+          </div>
+          <div class="slot" id="containerE" data-container="E">
+            <div class="rune" id="runeE"><div class="glyph" id="glyphE">?</div><div class="posLabel">E</div></div>
+          </div>
+        </div>
+        <div class="swapRing" id="swapRing"></div>
+        <div class="swapControl" id="swapControl" title="Swap Center and Bottom (180° flip)"></div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/**
+ * Titan Rune Puzzle — single-file implementation
+ *
+ * Positions: T, R, B, L, C
+ * Orientation: 0, 90, 180, 270 (degrees clockwise from upright)
+ *
+ * Moves:
+ * - RotateLeft(±90)
+ * - RotateBottom(±90)
+ * - RotateRing(±90): cardinal positions rotate; ALL 5 orientations rotate
+ * - SwapFlip: swap C and B, and both rotate 180
+ */
+
+// ======================
+// 1) CONFIGURE THIS PART
+// ======================
+
+// Goal state: which container should be at which position, and what orientation is "correct".
+const GOAL = {
+  T: { container: "E", rot: 0 },
+  R: { container: "P", rot: 0 },
+  B: { container: "O", rot: 0 },
+  L: { container: "C", rot: 0 },
+  C: { container: "H", rot: 0 },
+};
+
+// Starting state: container data (icon, rotation)
+// E=center, P=bottom, O=top, C=right, H=left initially
+const START = {
+  E: { rune: "E", rot: 0, displayRot: 0 },
+  P: { rune: "P", rot: 180, displayRot: 180 },
+  O: { rune: "O", rot: 0, displayRot: 0 },
+  C: { rune: "C", rot: 0, displayRot: 0 },
+  H: { rune: "H", rot: 0, displayRot: 0 },
+};
+
+// Track which container is at which visual position
+// Initial: E→center, P→bottom, O→top, C→right, H→left
+let positionMap = {
+  T: "O",  // Top position has O container
+  R: "C",  // Right position has C container
+  B: "P",  // Bottom position has P container
+  L: "H",  // Left position has H container
+  C: "E",  // Center position has E container
+};
+
+// Optional: rename the on-screen labels on the rune tiles (purely cosmetic).
+const POSITION_LABELS = { T:"TOP", R:"RIGHT", B:"BOTTOM", L:"LEFT", C:"CENTER" };
+
+// ======================
+// 2) STATE + HELPERS
+// ======================
+
+let state = deepCopy(START);
+
+function deepCopy(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function normRot(deg){
+  // normalize to 0/90/180/270
+  deg %= 360;
+  if (deg < 0) deg += 360;
+  return deg;
+}
+
+function addRot(container, delta){
+  const oldRot = state[container].rot;
+  state[container].rot = normRot(state[container].rot + delta);
+  
+  // Update display rotation to always go clockwise
+  // If we're wrapping around (going from high to low), add 360 to keep it increasing
+  const newRot = state[container].rot;
+  if (delta > 0 && newRot < oldRot) {
+    // Wrapping forward: 270 -> 0, so add 360
+    state[container].displayRot = state[container].displayRot + delta;
+  } else if (delta < 0 && newRot > oldRot) {
+    // Wrapping backward: 0 -> 270, but we want clockwise, so we still add
+    state[container].displayRot = state[container].displayRot + 360 + delta;
+  } else {
+    // Normal case, no wrap
+    state[container].displayRot = state[container].displayRot + delta;
+  }
+}
+
+/**
+ * Rotate a list of containers around a defined point
+ * @param {string[]} containers - Array of container names (e.g., ["E", "P", "O"])
+ * @param {number} centerX - X coordinate of rotation center (as percentage of ring: 0-100)
+ * @param {number} centerY - Y coordinate of rotation center (as percentage of ring: 0-100)
+ * @param {number} delta - Rotation angle in degrees (positive = clockwise)
+ */
+// Helper function to get container's natural position from CSS classes (before transforms)
+
+function rotateRing(delta){
+  // delta should be +90 (CW) or -90 (CCW)
+  // Rotate the whole ring - containers will rotate with it since they're children
+  // Note: We do NOT rotate the icon orientations - only the container positions change
+  
+  // Update visual rotation of the ring (cumulative, can exceed 360)
+  ringRotation += delta;
+  
+  // Render immediately to start the animation
+  render();
+  
+  // After animation completes, update positionMap for tracking
+  // (No need to update CSS classes - containers rotate with the ring and stay in relative positions)
+  setTimeout(() => {
+    // Update positionMap
+    const oldPositionMap = { ...positionMap };
+    
+    if (delta === 90) {
+      // CW: T->R, R->B, B->L, L->T
+      positionMap.R = oldPositionMap.T;
+      positionMap.B = oldPositionMap.R;
+      positionMap.L = oldPositionMap.B;
+      positionMap.T = oldPositionMap.L;
+    } else if (delta === -90) {
+      // CCW: T->L, L->B, B->R, R->T
+      positionMap.L = oldPositionMap.T;
+      positionMap.B = oldPositionMap.L;
+      positionMap.R = oldPositionMap.B;
+      positionMap.T = oldPositionMap.R;
+    }
+    // Center container stays at center (positionMap.C unchanged)
+  }, 400);
+}
+
+function swapFlip(){
+  const centerContainer = positionMap.C;
+  const bottomContainer = positionMap.B;
+  const centerEl = containerEls[centerContainer];
+  const bottomEl = containerEls[bottomContainer];
+  
+  updateContainerPositions();
+  
+  // Calculate midpoint between center and bottom containers
+  const arenaRect = ringElement.parentElement.getBoundingClientRect();
+  const centerRect = centerEl.getBoundingClientRect();
+  const bottomRect = bottomEl.getBoundingClientRect();
+  
+  const centerCenterY = centerRect.top + centerRect.height / 2 - arenaRect.top;
+  const bottomCenterY = bottomRect.top + bottomRect.height / 2 - arenaRect.top;
+  const midpointY = (centerCenterY + bottomCenterY) / 2;
+  const midpointPercent = (midpointY / arenaRect.height) * 100;
+  
+  // Position swap ring at midpoint
+  swapRingElement.style.left = "50%";
+  swapRingElement.style.top = `${midpointPercent}%`;
+  
+  // Calculate container positions relative to swap ring center
+  const swapRingSize = parseFloat(getComputedStyle(swapRingElement).width);
+  const centerOffsetY = centerCenterY - midpointY;
+  const bottomOffsetY = bottomCenterY - midpointY;
+  const centerTopPercent = 50 + (centerOffsetY / swapRingSize) * 100;
+  const bottomTopPercent = 50 + (bottomOffsetY / swapRingSize) * 100;
+  
+  // Move containers to swap ring and position them
+  swapRingElement.appendChild(centerEl);
+  swapRingElement.appendChild(bottomEl);
+  centerEl.classList.remove("top", "right", "bottom", "left", "center");
+  bottomEl.classList.remove("top", "right", "bottom", "left", "center");
+  centerEl.style.left = "50%";
+  centerEl.style.top = `${centerTopPercent}%`;
+  bottomEl.style.left = "50%";
+  bottomEl.style.top = `${bottomTopPercent}%`;
+  
+  // Rotate swap ring 180 degrees
+  swapRingRotation += 180;
+  swapRingElement.style.transform = `translate(-50%, -50%) rotate(${swapRingRotation}deg)`;
+  
+  setTimeout(() => {
+    // Update state
+    positionMap.C = bottomContainer;
+    positionMap.B = centerContainer;
+    addRot(centerContainer, 180);
+    addRot(bottomContainer, 180);
+    
+    // Move containers back to main ring
+    ringElement.appendChild(centerEl);
+    ringElement.appendChild(bottomEl);
+    
+    // Clear inline positioning styles
+    centerEl.style.left = "";
+    centerEl.style.top = "";
+    bottomEl.style.left = "";
+    bottomEl.style.top = "";
+    
+    // Update CSS classes and reset swap ring
+    updateContainerPositions();
+    swapRingRotation = 0;
+    swapRingElement.style.transform = `translate(-50%, -50%) rotate(0deg)`;
+    
+    // Disable rotation transitions temporarily to prevent extra animation
+    centerEl.style.transition = "left 400ms ease, top 400ms ease";
+    bottomEl.style.transition = "left 400ms ease, top 400ms ease";
+    
+    requestAnimationFrame(() => {
+      render();
+      
+      // Re-enable full transitions after a frame
+      requestAnimationFrame(() => {
+        centerEl.style.transition = "";
+        bottomEl.style.transition = "";
+      });
+    });
+  }, 400);
+  
+  // Render immediately
+  render();
+}
+
+// ======================
+// 3) RENDERING
+// ======================
+
+const glyphEls = {
+  E: document.getElementById("glyphE"),
+  P: document.getElementById("glyphP"),
+  O: document.getElementById("glyphO"),
+  C: document.getElementById("glyphC"),
+  H: document.getElementById("glyphH"),
+};
+
+const containerEls = {
+  E: document.getElementById("containerE"),
+  P: document.getElementById("containerP"),
+  O: document.getElementById("containerO"),
+  C: document.getElementById("containerC"),
+  H: document.getElementById("containerH"),
+};
+
+// Track the ring's visual rotation
+let ringRotation = 0;
+const ringElement = document.getElementById("ring");
+const swapRingElement = document.getElementById("swapRing");
+const swapControlElement = document.getElementById("swapControl");
+let swapRingRotation = 0;
+
+// Position classes for slots
+const positionClasses = { T: "top", R: "right", B: "bottom", L: "left", C: "center" };
+
+function updateContainerPositions(){
+  // Update CSS classes to position containers at their current visual positions
+  for (const container of ["E", "P", "O", "C", "H"]) {
+    const containerEl = containerEls[container];
+    // Remove all position classes
+    containerEl.classList.remove("top", "right", "bottom", "left", "center");
+  }
+  
+  // Add position classes based on positionMap
+  for (const [pos, container] of Object.entries(positionMap)) {
+    containerEls[container].classList.add(positionClasses[pos]);
+  }
+}
+
+function render(){
+  // Render each container's icon data and rotation
+  for (const container of ["E", "P", "O", "C", "H"]) {
+    glyphEls[container].textContent = state[container].rune;
+    
+    // Apply rotation to the container (not just the icon)
+    // Use displayRot for smooth clockwise transitions (can exceed 360)
+    // The slot already has translate(-50%, -50%) in CSS, so we combine it with rotation
+    const containerEl = containerEls[container];
+    containerEl.style.transform = `translate(-50%, -50%) rotate(${state[container].displayRot}deg)`;
+  }
+  
+  // Don't update container positions here - they rotate with the ring
+  // updateContainerPositions() is only called when we need to change CSS classes
+  
+  // Apply ring rotation
+  ringElement.style.transform = `rotate(${ringRotation}deg)`;
+}
+
+// ======================
+// 4) WIRE UP CONTROLS
+// ======================
+
+// Click on ring to rotate ring (and all icons) 90° clockwise
+document.getElementById("ring").addEventListener("click", (e) => {
+  // Only trigger if clicking directly on the ring background, not on a rune or swap control
+  if (e.target.id === "ring" || e.target.classList.contains("ring")) {
+    rotateRing(90);
+    render();
+  }
+});
+
+// Click on individual runes to rotate them 90° clockwise
+document.getElementById("runeE").addEventListener("click", (e) => {
+  e.stopPropagation();
+  addRot("E", 90);
+  render();
+});
+document.getElementById("runeP").addEventListener("click", (e) => {
+  e.stopPropagation();
+  addRot("P", 90);
+  render();
+});
+document.getElementById("runeO").addEventListener("click", (e) => {
+  e.stopPropagation();
+  addRot("O", 90);
+  render();
+});
+document.getElementById("runeC").addEventListener("click", (e) => {
+  e.stopPropagation();
+  addRot("C", 90);
+  render();
+});
+document.getElementById("runeH").addEventListener("click", (e) => {
+  e.stopPropagation();
+  addRot("H", 90);
+  render();
+});
+
+// Click on swap control to swap center and bottom (180° flip)
+document.getElementById("swapControl").addEventListener("click", (e) => {
+  e.stopPropagation();
+  swapFlip();
+  render();
+});
+
+// Initialize container positions
+updateContainerPositions();
+
+// Initial render
+render();
+</script>
+</body>
+</html>
