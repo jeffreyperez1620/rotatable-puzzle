@@ -24,44 +24,66 @@
       --shadow: 0 12px 30px rgba(0,0,0,.45);
       --radius: 18px;
       --runeFont: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      
+      /* Arena positioning - adjust these values */
+      --arenaLeft: 50%;
+      --arenaTop: 40%;
+      --arenaScale: 1;
+      --arenaTransform: translate(-50%, -50%);
     }
 
     * { box-sizing: border-box; }
     body{
       margin:0;
       font-family: var(--runeFont);
-      background: radial-gradient(1200px 700px at 50% 15%, rgba(123,211,255,0.12), transparent 55%),
-                  radial-gradient(1000px 600px at 20% 80%, rgba(255,210,123,0.08), transparent 50%),
-                  var(--bg);
+      background: url('assets/broken_console.png') center center / contain no-repeat;
+      background-color: var(--bg);
       color: var(--ink);
       min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Foreground overlay - in front of everything */
+    .foreground-overlay{
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: auto;
+      z-index: 1000;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .foreground-overlay img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center center;
     }
 
     .wrap{
-      width:min(980px, 100%);
-      display:flex;
-      justify-content:center;
+      position: absolute;
+      left: var(--arenaLeft);
+      top: var(--arenaTop);
+      transform: var(--arenaTransform) scale(var(--arenaScale));
+      transform-origin: center center;
+      z-index: 10;
     }
 
     .card{
-      background: linear-gradient(180deg, rgba(16,24,38,.92), rgba(14,22,34,.92));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: visible;
     }
 
     .header{
-      padding: 16px 18px 12px;
-      border-bottom: 1px solid rgba(123,211,255,0.16);
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 12px;
+      display: none;
     }
     h1{
       margin:0;
@@ -78,7 +100,7 @@
 
 
     .arena{
-      padding: 18px;
+      padding: 0;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -97,21 +119,32 @@
       cursor: pointer;
       transition: transform 400ms ease;
       transform-origin: center center;
+      z-index: 1;
     }
     
     .swapRing{
-      /* Hidden ring for swap animation */
-      width: var(--ringSize);
-      height: var(--ringSize);
+      /* Visible ring for swap animation - spans from center to bottom of ringElement */
+      width: calc(var(--ringSize) * 0.4);
+      height: calc(var(--ringSize) * 0.4);
       border-radius: 999px;
       position: absolute;
       left: 50%;
-      top: 70%;
+      top: calc(50% + var(--ringSize) * 0.2);
       transform: translate(-50%, -50%);
-      pointer-events: none;
-      /* No opacity - containers inside should be visible */
+      pointer-events: auto;
+      cursor: pointer;
+      border: 1px solid rgba(123,211,255,0.22);
+      background: radial-gradient(circle at 50% 50%,
+        rgba(123,211,255,0.08), rgba(11,15,20,0.65) 55%, rgba(11,15,20,0.25) 85%);
+      box-shadow: inset 0 0 0 2px rgba(123,211,255,0.06);
       transition: transform 400ms ease;
       transform-origin: center center;
+      z-index: 2;
+    }
+    .swapRing:hover{
+      border-color: rgba(123,211,255,0.4);
+      background: radial-gradient(circle at 50% 50%,
+        rgba(123,211,255,0.12), rgba(11,15,20,0.65) 55%, rgba(11,15,20,0.25) 85%);
     }
     .ring:hover{
       border-color: rgba(123,211,255,0.35);
@@ -138,6 +171,7 @@
       justify-content:center;
       transform: translate(-50%, -50%);
       transition: left 400ms ease, top 400ms ease, transform 400ms ease;
+      z-index: 3;
       /* Container rotation will be applied via inline style */
     }
     
@@ -160,10 +194,6 @@
     .rune{
       width: 100%;
       height: 100%;
-      border-radius: 16px;
-      border: 1px solid rgba(123,211,255,0.25);
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.08));
-      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
       display:flex;
       align-items:center;
       justify-content:center;
@@ -172,76 +202,20 @@
       transition: transform 180ms ease;
       cursor: pointer;
     }
-    .rune:hover{
-      border-color: rgba(123,211,255,0.4);
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.12));
-    }
 
     .rune .glyph{
-      font-size: 44px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      color: rgba(217,230,255,0.92);
-      text-shadow: 0 0 22px rgba(123,211,255,0.22);
-      /* Icon no longer rotates - container rotates instead */
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
 
-    /* Orientation notch for visual clarity */
-    .rune:after{
-      content:"";
-      position:absolute;
-      top: 8px; left: 50%;
-      width: 28px; height: 6px;
-      transform: translateX(-50%);
-      border-radius: 999px;
-      background: rgba(255,210,123,0.65);
-      box-shadow: 0 0 18px rgba(255,210,123,0.18);
-      opacity:.9;
-    }
-
-    /* little position labels */
-    .posLabel{
-      position:absolute;
-      bottom: -18px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 11px;
-      color: rgba(147,164,199,0.9);
-      letter-spacing: 0.4px;
-    }
 
     .slot.swapping {
       transition: transform 400ms ease;
       z-index: 10;
     }
 
-    .swapControl{
-      position: absolute;
-      left: 50%;
-      top: 70%;
-      transform: translate(-50%, -50%);
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,210,123,0.4);
-      background: rgba(255,210,123,0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 20;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .swapControl:hover{
-      border-color: rgba(255,210,123,0.6);
-      background: rgba(255,210,123,0.18);
-      transform: translate(-50%, -50%) scale(1.1);
-    }
-    .swapControl:before{
-      content: "⇵";
-      font-size: 24px;
-      color: rgba(255,230,185,0.9);
-    }
 
     .footerNote{
       padding: 0 18px 18px;
@@ -263,7 +237,7 @@
         <div>
           <h1>Titan Tenets Alignment</h1>
           <div class="sub">
-            Click runes to rotate them. Click the ring to rotate all. Click the control between bottom and center to swap them.
+            Click runes to rotate them. Click the ring to rotate all. Click the swap ring to swap center and bottom.
           </div>
         </div>
       </div>
@@ -271,26 +245,28 @@
       <div class="arena">
         <div class="ring" id="ring" aria-label="Puzzle ring">
           <div class="slot" id="containerO" data-container="O">
-            <div class="rune" id="runeO"><div class="glyph" id="glyphO">?</div><div class="posLabel">O</div></div>
+            <div class="rune" id="runeO"><img class="glyph" id="glyphO" src="assets/order.png" alt="O"></div>
           </div>
           <div class="slot" id="containerC" data-container="C">
-            <div class="rune" id="runeC"><div class="glyph" id="glyphC">?</div><div class="posLabel">C</div></div>
+            <div class="rune" id="runeC"><img class="glyph" id="glyphC" src="assets/creation.png" alt="C"></div>
           </div>
           <div class="slot" id="containerH" data-container="H">
-            <div class="rune" id="runeH"><div class="glyph" id="glyphH">?</div><div class="posLabel">H</div></div>
+            <div class="rune" id="runeH"><img class="glyph" id="glyphH" src="assets/harmony.png" alt="H"></div>
           </div>
           <div class="slot" id="containerP" data-container="P">
-            <div class="rune" id="runeP"><div class="glyph" id="glyphP">?</div><div class="posLabel">P</div></div>
+            <div class="rune" id="runeP"><img class="glyph" id="glyphP" src="assets/preservation.png" alt="P"></div>
           </div>
           <div class="slot" id="containerE" data-container="E">
-            <div class="rune" id="runeE"><div class="glyph" id="glyphE">?</div><div class="posLabel">E</div></div>
+            <div class="rune" id="runeE"><img class="glyph" id="glyphE" src="assets/enlightenment.png" alt="E"></div>
           </div>
         </div>
-        <div class="swapRing" id="swapRing"></div>
-        <div class="swapControl" id="swapControl" title="Swap Center and Bottom (180° flip)"></div>
+        <div class="swapRing" id="swapRing" title="Swap Center and Bottom (180° flip)"></div>
       </div>
 
     </div>
+  </div>
+  <div class="foreground-overlay">
+    <img id="foregroundImage" src="assets/broken_console_over.png" alt="">
   </div>
 
 <script>
@@ -323,11 +299,11 @@ const GOAL = {
 // Starting state: container data (icon, rotation)
 // E=center, P=bottom, O=top, C=right, H=left initially
 const START = {
-  E: { rune: "E", rot: 0, displayRot: 0 },
-  P: { rune: "P", rot: 180, displayRot: 180 },
-  O: { rune: "O", rot: 0, displayRot: 0 },
-  C: { rune: "C", rot: 0, displayRot: 0 },
-  H: { rune: "H", rot: 0, displayRot: 0 },
+  E: { rune: "E", image: "assets/enlightenment.png", rot: 0, displayRot: 0 },
+  P: { rune: "P", image: "assets/preservation.png", rot: 180, displayRot: 180 },
+  O: { rune: "O", image: "assets/order.png", rot: 0, displayRot: 0 },
+  C: { rune: "C", image: "assets/creation.png", rot: 0, displayRot: 0 },
+  H: { rune: "H", image: "assets/harmony.png", rot: 0, displayRot: 0 },
 };
 
 // Track which container is at which visual position
@@ -360,6 +336,8 @@ function normRot(deg){
 
 function addRot(container, delta){
   const oldRot = state[container].rot;
+  const oldDisplayRot = state[container].displayRot;
+  
   state[container].rot = normRot(state[container].rot + delta);
   
   // Update display rotation to always go clockwise
@@ -375,6 +353,7 @@ function addRot(container, delta){
     // Normal case, no wrap
     state[container].displayRot = state[container].displayRot + delta;
   }
+  
 }
 
 /**
@@ -402,7 +381,6 @@ function rotateRing(delta){
   setTimeout(() => {
     // Update positionMap
     const oldPositionMap = { ...positionMap };
-    
     if (delta === 90) {
       // CW: T->R, R->B, B->L, L->T
       positionMap.R = oldPositionMap.T;
@@ -417,6 +395,10 @@ function rotateRing(delta){
       positionMap.T = oldPositionMap.R;
     }
     // Center container stays at center (positionMap.C unchanged)
+    
+    // Don't update CSS classes - containers are children of ringElement and rotate with it
+    // Their visual positions are already correct, and updating classes would cause them to move
+    // The CSS classes will be updated when needed (e.g., in swapFlip)
   }, 400);
 }
 
@@ -426,51 +408,100 @@ function swapFlip(){
   const centerEl = containerEls[centerContainer];
   const bottomEl = containerEls[bottomContainer];
   
-  updateContainerPositions();
+  // Get current CSS classes before swapping
+  const centerCurrentClass = centerEl.classList.contains("center") ? "center" :
+                             centerEl.classList.contains("top") ? "top" :
+                             centerEl.classList.contains("right") ? "right" :
+                             centerEl.classList.contains("bottom") ? "bottom" :
+                             centerEl.classList.contains("left") ? "left" : null;
+  const bottomCurrentClass = bottomEl.classList.contains("center") ? "center" :
+                             bottomEl.classList.contains("top") ? "top" :
+                             bottomEl.classList.contains("right") ? "right" :
+                             bottomEl.classList.contains("bottom") ? "bottom" :
+                             bottomEl.classList.contains("left") ? "left" : null;
   
-  // Calculate midpoint between center and bottom containers
-  const arenaRect = ringElement.parentElement.getBoundingClientRect();
+  // Get current orientations from state (containers in ringElement have transform set by render())
+  // When containers are children of rotated ringElement:
+  // - Their transform is rotate(displayRot) 
+  // - ringElement's transform is rotate(ringRotation)
+  // - Net visual rotation is displayRot + ringRotation
+  const centerDisplayRot = state[centerContainer].displayRot;
+  const bottomDisplayRot = state[bottomContainer].displayRot;
+  
+  // When moved to swapRing, containers lose the ring's rotation, so we need to include it in their transform
+  const centerAbsoluteRot = centerDisplayRot + ringRotation;
+  const bottomAbsoluteRot = bottomDisplayRot + ringRotation;
+  
+  // Get container and swap ring positions (swapRing is statically positioned)
   const centerRect = centerEl.getBoundingClientRect();
   const bottomRect = bottomEl.getBoundingClientRect();
+  const swapRingRect = swapRingElement.getBoundingClientRect();
   
-  const centerCenterY = centerRect.top + centerRect.height / 2 - arenaRect.top;
-  const bottomCenterY = bottomRect.top + bottomRect.height / 2 - arenaRect.top;
-  const midpointY = (centerCenterY + bottomCenterY) / 2;
-  const midpointPercent = (midpointY / arenaRect.height) * 100;
-  
-  // Position swap ring at midpoint
-  swapRingElement.style.left = "50%";
-  swapRingElement.style.top = `${midpointPercent}%`;
+  const centerCenterX = centerRect.left + centerRect.width / 2;
+  const centerCenterY = centerRect.top + centerRect.height / 2;
+  const bottomCenterX = bottomRect.left + bottomRect.width / 2;
+  const bottomCenterY = bottomRect.top + bottomRect.height / 2;
+  const swapRingCenterX = swapRingRect.left + swapRingRect.width / 2;
+  const swapRingCenterY = swapRingRect.top + swapRingRect.height / 2;
+  const swapRingSize = parseFloat(getComputedStyle(swapRingElement).width);
   
   // Calculate container positions relative to swap ring center
-  const swapRingSize = parseFloat(getComputedStyle(swapRingElement).width);
-  const centerOffsetY = centerCenterY - midpointY;
-  const bottomOffsetY = bottomCenterY - midpointY;
+  const centerOffsetX = centerCenterX - swapRingCenterX;
+  const centerOffsetY = centerCenterY - swapRingCenterY;
+  const bottomOffsetX = bottomCenterX - swapRingCenterX;
+  const bottomOffsetY = bottomCenterY - swapRingCenterY;
+  
+  const centerLeftPercent = 50 + (centerOffsetX / swapRingSize) * 100;
   const centerTopPercent = 50 + (centerOffsetY / swapRingSize) * 100;
+  const bottomLeftPercent = 50 + (bottomOffsetX / swapRingSize) * 100;
   const bottomTopPercent = 50 + (bottomOffsetY / swapRingSize) * 100;
   
-  // Move containers to swap ring and position them
-  swapRingElement.appendChild(centerEl);
-  swapRingElement.appendChild(bottomEl);
+  // Move containers from ringElement to swapRing, maintaining their orientation
   centerEl.classList.remove("top", "right", "bottom", "left", "center");
   bottomEl.classList.remove("top", "right", "bottom", "left", "center");
-  centerEl.style.left = "50%";
+  
+  // Move containers to swapRing
+  swapRingElement.appendChild(centerEl);
+  swapRingElement.appendChild(bottomEl);
+  
+  // Position containers in swap ring
+  centerEl.style.left = `${centerLeftPercent}%`;
   centerEl.style.top = `${centerTopPercent}%`;
-  bottomEl.style.left = "50%";
+  bottomEl.style.left = `${bottomLeftPercent}%`;
   bottomEl.style.top = `${bottomTopPercent}%`;
   
-  // Rotate swap ring 180 degrees
-  swapRingRotation += 180;
+  // Set transform to preserve current visual orientation when moving to swapRing
+  // When in ringElement, visual rotation = displayRot + ringRotation (parent applies ringRotation)
+  // When moved to swapRing, containers lose the ring's rotation, so we need to include it
+  // The containers will rotate naturally with the swapRing (180 degrees), ending up 180 degrees rotated
+  centerEl.style.transform = `translate(-50%, -50%) rotate(${centerAbsoluteRot}deg)`;
+  bottomEl.style.transform = `translate(-50%, -50%) rotate(${bottomAbsoluteRot}deg)`;
+  
+  // Rotate swap ring 180 degrees - containers will rotate with it naturally
+  swapRingRotation = 180;
   swapRingElement.style.transform = `translate(-50%, -50%) rotate(${swapRingRotation}deg)`;
   
   setTimeout(() => {
-    // Update state
+    // Update data model: swap positions
     positionMap.C = bottomContainer;
     positionMap.B = centerContainer;
+    
+    // Update orientations: both containers rotated 180 degrees
     addRot(centerContainer, 180);
     addRot(bottomContainer, 180);
     
-    // Move containers back to main ring
+    // Move containers back to ringElement
+    // After rotating 180 degrees with swapRing, containers have rotated 180 degrees
+    // Their displayRot has been updated by addRot(), so we use that for the final transform
+    // When containers are children of ringElement, their transform is just displayRot
+    // (the ring's rotation is applied separately to ringElement)
+    const finalCenterRot = state[centerContainer].displayRot;
+    const finalBottomRot = state[bottomContainer].displayRot;
+    
+    // Set the transform to the new displayRot (which includes the 180-degree rotation)
+    centerEl.style.transform = `translate(-50%, -50%) rotate(${finalCenterRot}deg)`;
+    bottomEl.style.transform = `translate(-50%, -50%) rotate(${finalBottomRot}deg)`;
+    
     ringElement.appendChild(centerEl);
     ringElement.appendChild(bottomEl);
     
@@ -480,8 +511,21 @@ function swapFlip(){
     bottomEl.style.left = "";
     bottomEl.style.top = "";
     
-    // Update CSS classes and reset swap ring
-    updateContainerPositions();
+    // Swap CSS classes: old center gets old bottom's class, old bottom gets center class
+    centerEl.classList.remove("top", "right", "bottom", "left", "center");
+    bottomEl.classList.remove("top", "right", "bottom", "left", "center");
+    
+    // Old center container gets old bottom's class (or "bottom" if it was "center")
+    if (bottomCurrentClass && bottomCurrentClass !== "center") {
+      centerEl.classList.add(bottomCurrentClass);
+    } else {
+      centerEl.classList.add("bottom");
+    }
+    
+    // Old bottom container gets "center" class
+    bottomEl.classList.add("center");
+    
+    // Reset swap ring
     swapRingRotation = 0;
     swapRingElement.style.transform = `translate(-50%, -50%) rotate(0deg)`;
     
@@ -499,9 +543,6 @@ function swapFlip(){
       });
     });
   }, 400);
-  
-  // Render immediately
-  render();
 }
 
 // ======================
@@ -528,7 +569,6 @@ const containerEls = {
 let ringRotation = 0;
 const ringElement = document.getElementById("ring");
 const swapRingElement = document.getElementById("swapRing");
-const swapControlElement = document.getElementById("swapControl");
 let swapRingRotation = 0;
 
 // Position classes for slots
@@ -551,13 +591,25 @@ function updateContainerPositions(){
 function render(){
   // Render each container's icon data and rotation
   for (const container of ["E", "P", "O", "C", "H"]) {
-    glyphEls[container].textContent = state[container].rune;
+    glyphEls[container].src = state[container].image;
+    
+    const containerEl = containerEls[container];
+    
+    // Skip transform update if container is in swap ring (has inline left/top styles)
+    // This prevents render() from interfering with swap animation
+    if (containerEl.style.left && containerEl.style.top && 
+        containerEl.parentElement === swapRingElement) {
+      continue;
+    }
     
     // Apply rotation to the container (not just the icon)
     // Use displayRot for smooth clockwise transitions (can exceed 360)
     // The slot already has translate(-50%, -50%) in CSS, so we combine it with rotation
-    const containerEl = containerEls[container];
-    containerEl.style.transform = `translate(-50%, -50%) rotate(${state[container].displayRot}deg)`;
+    const newTransform = `translate(-50%, -50%) rotate(${state[container].displayRot}deg)`;
+    const currentTransform = containerEl.style.transform;
+    if (currentTransform !== newTransform) {
+      containerEl.style.transform = newTransform;
+    }
   }
   
   // Don't update container positions here - they rotate with the ring
@@ -607,11 +659,11 @@ document.getElementById("runeH").addEventListener("click", (e) => {
   render();
 });
 
-// Click on swap control to swap center and bottom (180° flip)
-document.getElementById("swapControl").addEventListener("click", (e) => {
+// Click on swap ring to swap center and bottom (180° flip)
+document.getElementById("swapRing").addEventListener("click", (e) => {
   e.stopPropagation();
   swapFlip();
-  render();
+  // Don't call render() here - swapFlip handles rendering after animation completes
 });
 
 // Initialize container positions
@@ -619,6 +671,325 @@ updateContainerPositions();
 
 // Initial render
 render();
+
+// Log arena position and size for easy adjustment
+function logArenaInfo() {
+  const wrap = document.querySelector('.wrap');
+  const arena = document.querySelector('.arena');
+  if (!wrap || !arena) return;
+  
+  const wrapRect = wrap.getBoundingClientRect();
+  const computedStyle = getComputedStyle(document.documentElement);
+  
+  console.log('=== Arena Position & Size ===');
+  console.log('CSS Variables:');
+  console.log(`  --arenaLeft: ${computedStyle.getPropertyValue('--arenaLeft').trim()}`);
+  console.log(`  --arenaTop: ${computedStyle.getPropertyValue('--arenaTop').trim()}`);
+  console.log(`  --arenaScale: ${computedStyle.getPropertyValue('--arenaScale').trim()}`);
+  console.log('Actual Position (getBoundingClientRect):');
+  console.log(`  Left: ${wrapRect.left.toFixed(2)}px`);
+  console.log(`  Top: ${wrapRect.top.toFixed(2)}px`);
+  console.log(`  Width: ${wrapRect.width.toFixed(2)}px`);
+  console.log(`  Height: ${wrapRect.height.toFixed(2)}px`);
+  console.log('============================');
+}
+
+// Log on page load
+setTimeout(logArenaInfo, 100);
+
+// Also log when window is resized
+window.addEventListener('resize', () => {
+  setTimeout(logArenaInfo, 100);
+});
+
+// Handle clicks on foreground overlay - allow clicks through transparent pixels
+const foregroundOverlay = document.querySelector('.foreground-overlay');
+const foregroundImage = document.getElementById('foregroundImage');
+let overlayImage = null;
+let overlayImageLoaded = false;
+let imageDataCache = null;
+
+// Load the overlay image to check pixel transparency
+// Load as blob to avoid CORS issues when reading pixel data
+function loadOverlayImage() {
+  fetch('assets/broken_console_over.png')
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      // Set the foreground image src
+      foregroundImage.src = url;
+      
+      const img = new Image();
+      img.onload = function() {
+        overlayImage = img;
+        overlayImageLoaded = true;
+        console.log('Overlay image loaded:', overlayImage.naturalWidth, 'x', overlayImage.naturalHeight);
+        
+        // Pre-load image data into canvas to avoid CORS issues
+        const canvas = document.createElement('canvas');
+        canvas.width = overlayImage.naturalWidth;
+        canvas.height = overlayImage.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(overlayImage, 0, 0);
+        imageDataCache = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        console.log('Image data cached, ready for click detection');
+      };
+      img.onerror = function() {
+        console.error('Failed to load overlay image from blob URL');
+        // Try fallback
+        loadOverlayImageFallback();
+      };
+      img.src = url;
+    })
+    .catch(error => {
+      console.error('Failed to fetch overlay image:', error);
+      // Fallback: try loading directly
+      loadOverlayImageFallback();
+    });
+}
+
+function loadOverlayImageFallback() {
+  console.log('Trying fallback image loading with FileReader...');
+  // Try using XMLHttpRequest to load as blob, then convert to data URL
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', 'assets/broken_console_over.png', true);
+  xhr.responseType = 'blob';
+  xhr.onload = function() {
+    if (xhr.status === 200 || xhr.status === 0) { // 0 for file:// protocol
+      const blob = xhr.response;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        const img = new Image();
+        img.onload = function() {
+          overlayImage = img;
+          overlayImageLoaded = true;
+          foregroundImage.src = dataUrl;
+          console.log('Overlay image loaded (FileReader fallback):', overlayImage.naturalWidth, 'x', overlayImage.naturalHeight);
+          
+          // Now try to load image data from data URL (should work)
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = overlayImage.naturalWidth;
+            canvas.height = overlayImage.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(overlayImage, 0, 0);
+            imageDataCache = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            console.log('Image data cached (FileReader), ready for click detection');
+          } catch (err) {
+            console.warn('Could not cache image data:', err);
+          }
+        };
+        img.onerror = function() {
+          console.error('Failed to load image from data URL');
+        };
+        img.src = dataUrl;
+      };
+      reader.onerror = function() {
+        console.error('FileReader failed');
+        // Last resort: load directly (won't be able to check transparency)
+        loadOverlayImageDirect();
+      };
+      reader.readAsDataURL(blob);
+    } else {
+      console.error('XHR failed with status:', xhr.status);
+      loadOverlayImageDirect();
+    }
+  };
+  xhr.onerror = function() {
+    console.error('XHR error');
+    loadOverlayImageDirect();
+  };
+  xhr.send();
+}
+
+function loadOverlayImageDirect() {
+  console.log('Loading image directly (transparency checking will not work)');
+  const img = new Image();
+  img.onload = function() {
+    overlayImage = img;
+    overlayImageLoaded = true;
+    foregroundImage.src = 'assets/broken_console_over.png';
+    console.log('Overlay image loaded (direct):', overlayImage.naturalWidth, 'x', overlayImage.naturalHeight);
+    console.warn('Cannot check pixel transparency - run from http:// server for full functionality');
+  };
+  img.onerror = function() {
+    console.error('Failed to load overlay image (all methods failed)');
+  };
+  img.src = 'assets/broken_console_over.png';
+}
+
+// Start loading
+loadOverlayImage();
+
+foregroundOverlay.addEventListener('click', function(e) {
+  console.log('Overlay clicked at:', e.clientX, e.clientY);
+  console.log('overlayImageLoaded:', overlayImageLoaded, 'imageDataCache:', !!imageDataCache);
+  
+  if (!overlayImageLoaded) {
+    console.log('Image not loaded yet, allowing click through');
+    // If image not loaded yet, allow click through
+    e.stopPropagation();
+    e.preventDefault();
+    foregroundOverlay.style.pointerEvents = 'none';
+    const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+    foregroundOverlay.style.pointerEvents = 'auto';
+    
+    if (elementBelow && elementBelow !== foregroundOverlay && elementBelow !== foregroundImage) {
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        detail: 1,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        screenX: e.screenX,
+        screenY: e.screenY,
+        button: e.button,
+        buttons: e.buttons,
+        ctrlKey: e.ctrlKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        metaKey: e.metaKey
+      });
+      elementBelow.dispatchEvent(clickEvent);
+    }
+    return;
+  }
+  
+  // If we can't check pixel transparency (CORS issue), block all clicks to be safe
+  // User should run from a local server (http://) to enable transparency checking
+  if (!imageDataCache) {
+    console.log('Cannot check pixel transparency (CORS issue). Blocking click. Run from http:// server to enable transparency checking.');
+    e.stopPropagation();
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return false;
+  }
+  
+  // Get the image element's bounding rect (not the container)
+  const imageRect = foregroundImage.getBoundingClientRect();
+  const x = e.clientX - imageRect.left;
+  const y = e.clientY - imageRect.top;
+  
+  // Check if click is within the image bounds
+  if (x < 0 || x > imageRect.width || y < 0 || y > imageRect.height) {
+    // Click is outside the image area (transparent), allow it through
+    console.log('Click outside image bounds, allowing through');
+    foregroundOverlay.style.pointerEvents = 'none';
+    const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+    foregroundOverlay.style.pointerEvents = 'auto';
+    
+    if (elementBelow && elementBelow !== foregroundOverlay && elementBelow !== foregroundImage) {
+      console.log('Clicking element below:', elementBelow);
+      // Create and dispatch a proper click event
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        detail: 1,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        screenX: e.screenX,
+        screenY: e.screenY,
+        button: e.button,
+        buttons: e.buttons,
+        ctrlKey: e.ctrlKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        metaKey: e.metaKey
+      });
+      elementBelow.dispatchEvent(clickEvent);
+    }
+    return;
+  }
+  
+  // Map click coordinates to image coordinates
+  const imageX = Math.floor((x / imageRect.width) * overlayImage.naturalWidth);
+  const imageY = Math.floor((y / imageRect.height) * overlayImage.naturalHeight);
+  
+  // Clamp coordinates to image bounds
+  const clampedX = Math.max(0, Math.min(imageX, overlayImage.naturalWidth - 1));
+  const clampedY = Math.max(0, Math.min(imageY, overlayImage.naturalHeight - 1));
+  
+  // Check pixel alpha from cached image data
+  if (!imageDataCache) {
+    console.error('Image data cache not available');
+    // Allow click through if we can't check
+    foregroundOverlay.style.pointerEvents = 'none';
+    const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+    foregroundOverlay.style.pointerEvents = 'auto';
+    
+    if (elementBelow && elementBelow !== foregroundOverlay && elementBelow !== foregroundImage) {
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        detail: 1,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        screenX: e.screenX,
+        screenY: e.screenY,
+        button: e.button,
+        buttons: e.buttons,
+        ctrlKey: e.ctrlKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        metaKey: e.metaKey
+      });
+      elementBelow.dispatchEvent(clickEvent);
+    }
+    return;
+  }
+  
+  // Get pixel data from cache (width * y + x) * 4 + 3 for alpha
+  const pixelIndex = (clampedY * imageDataCache.width + clampedX) * 4;
+  const alpha = imageDataCache.data[pixelIndex + 3]; // Alpha channel (0-255)
+  
+  console.log('Pixel alpha at', clampedX, clampedY, ':', alpha);
+  
+  // If pixel is transparent (alpha < 128), allow click through
+  if (alpha < 128) {
+    console.log('Transparent pixel, allowing click through');
+    e.stopPropagation();
+    e.preventDefault();
+    foregroundOverlay.style.pointerEvents = 'none';
+    const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+    foregroundOverlay.style.pointerEvents = 'auto';
+    
+    if (elementBelow && elementBelow !== foregroundOverlay && elementBelow !== foregroundImage) {
+      console.log('Clicking element below:', elementBelow);
+      // Create and dispatch a proper click event
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        detail: 1,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        screenX: e.screenX,
+        screenY: e.screenY,
+        button: e.button,
+        buttons: e.buttons,
+        ctrlKey: e.ctrlKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        metaKey: e.metaKey
+      });
+      elementBelow.dispatchEvent(clickEvent);
+    }
+  } else {
+    // Pixel is opaque - block the click completely
+    console.log('Opaque pixel, blocking click');
+    e.stopPropagation();
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return false;
+  }
+});
 </script>
 </body>
 </html>
