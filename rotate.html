@@ -27,8 +27,8 @@
       
       /* Arena positioning - adjust these values */
       --arenaLeft: 50%;
-      --arenaTop: 40%;
-      --arenaScale: 1;
+      --arenaTop: 35%;
+      --arenaScale: 0.8;
       --arenaTransform: translate(-50%, -50%);
     }
 
@@ -140,6 +140,8 @@
       transition: transform 400ms ease;
       transform-origin: center center;
       z-index: 2;
+      /* Ensure children (containers) are not affected by background */
+      isolation: isolate;
     }
     .swapRing:hover{
       border-color: rgba(123,211,255,0.4);
@@ -224,6 +226,25 @@
       line-height: 1.45;
     }
 
+    .solution-light{
+      position: fixed;
+      left: 50%;
+      top: 65%;
+      transform: translate(-50%, -50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #00ff00;
+      box-shadow: 0 0 30px #00ff00, 0 0 60px #00ff00, 0 0 90px #00ff00;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1001;
+      pointer-events: none;
+    }
+    .solution-light.visible{
+      opacity: 1;
+    }
+
     @media (max-width: 940px){
       .ring{ width:min(460px, 90vw); height:min(460px, 90vw); }
     }
@@ -243,6 +264,7 @@
       </div>
 
       <div class="arena">
+        <div class="swapRing" id="swapRing" title="Swap Center and Bottom (180° flip)"></div>
         <div class="ring" id="ring" aria-label="Puzzle ring">
           <div class="slot" id="containerO" data-container="O">
             <div class="rune" id="runeO"><img class="glyph" id="glyphO" src="assets/order.png" alt="O"></div>
@@ -260,7 +282,6 @@
             <div class="rune" id="runeE"><img class="glyph" id="glyphE" src="assets/enlightenment.png" alt="E"></div>
           </div>
         </div>
-        <div class="swapRing" id="swapRing" title="Swap Center and Bottom (180° flip)"></div>
       </div>
 
     </div>
@@ -268,6 +289,7 @@
   <div class="foreground-overlay">
     <img id="foregroundImage" src="assets/broken_console_over.png" alt="">
   </div>
+  <div class="solution-light" id="solutionLight"></div>
 
 <script>
 /**
@@ -291,19 +313,93 @@
 const GOAL = {
   T: { container: "E", rot: 0 },
   R: { container: "P", rot: 0 },
-  B: { container: "O", rot: 0 },
+  B: { container: "O", rot: 0 },  // rotation doesn't matter for bottom
   L: { container: "C", rot: 0 },
   C: { container: "H", rot: 0 },
 };
 
+// Check if puzzle is solved
+function isSolved(){
+  // Calculate total visual rotation: container rotation + ring rotation
+  const getTotalRotation = (container) => normRot(state[container].rot + ringRotation);
+  
+  // Top: E, rotation 0
+  if (positionMap.T !== "E") {
+    console.log(`❌ Solution check failed: Top position has container "${positionMap.T}", expected "E"`);
+    return false;
+  }
+  const topTotalRot = getTotalRotation(positionMap.T);
+  if (topTotalRot !== 0) {
+    console.log(`❌ Solution check failed: Top container (E) total rotation is ${topTotalRot}° (container: ${normRot(state[positionMap.T].rot)}°, ring: ${ringRotation}°), expected 0°`);
+    return false;
+  }
+  
+  // Right: P, rotation 0
+  if (positionMap.R !== "P") {
+    console.log(`❌ Solution check failed: Right position has container "${positionMap.R}", expected "P"`);
+    return false;
+  }
+  const rightTotalRot = getTotalRotation(positionMap.R);
+  if (rightTotalRot !== 0) {
+    console.log(`❌ Solution check failed: Right container (P) total rotation is ${rightTotalRot}° (container: ${normRot(state[positionMap.R].rot)}°, ring: ${ringRotation}°), expected 0°`);
+    return false;
+  }
+  
+  // Bottom: O (rotation doesn't matter)
+  if (positionMap.B !== "O") {
+    console.log(`❌ Solution check failed: Bottom position has container "${positionMap.B}", expected "O"`);
+    return false;
+  }
+  
+  // Left: C, rotation 0
+  if (positionMap.L !== "C") {
+    console.log(`❌ Solution check failed: Left position has container "${positionMap.L}", expected "C"`);
+    return false;
+  }
+  const leftTotalRot = getTotalRotation(positionMap.L);
+  if (leftTotalRot !== 0) {
+    console.log(`❌ Solution check failed: Left container (C) total rotation is ${leftTotalRot}° (container: ${normRot(state[positionMap.L].rot)}°, ring: ${ringRotation}°), expected 0°`);
+    return false;
+  }
+  
+  // Center: H, rotation 0
+  if (positionMap.C !== "H") {
+    console.log(`❌ Solution check failed: Center position has container "${positionMap.C}", expected "H"`);
+    return false;
+  }
+  const centerTotalRot = getTotalRotation(positionMap.C);
+  if (centerTotalRot !== 0) {
+    console.log(`❌ Solution check failed: Center container (H) total rotation is ${centerTotalRot}° (container: ${normRot(state[positionMap.C].rot)}°, ring: ${ringRotation}°), expected 0°`);
+    return false;
+  }
+  
+  return true;
+}
+
+// Update solution light visibility
+function updateSolutionLight(){
+  const solutionLight = document.getElementById("solutionLight");
+  const wasVisible = solutionLight.classList.contains("visible");
+  const isNowSolved = isSolved();
+  
+  if (isNowSolved) {
+    solutionLight.classList.add("visible");
+    if (!wasVisible) {
+      console.log("🎉 Puzzle solved! All containers are in the correct positions and orientations.");
+    }
+  } else {
+    solutionLight.classList.remove("visible");
+  }
+}
+
 // Starting state: container data (icon, rotation)
 // E=center, P=bottom, O=top, C=right, H=left initially
 const START = {
-  E: { rune: "E", image: "assets/enlightenment.png", rot: 0, displayRot: 0 },
+  E: { rune: "E", image: "assets/enlightenment.png", rot: 90, displayRot: 90 },
   P: { rune: "P", image: "assets/preservation.png", rot: 180, displayRot: 180 },
   O: { rune: "O", image: "assets/order.png", rot: 0, displayRot: 0 },
-  C: { rune: "C", image: "assets/creation.png", rot: 0, displayRot: 0 },
-  H: { rune: "H", image: "assets/harmony.png", rot: 0, displayRot: 0 },
+  C: { rune: "C", image: "assets/creation.png", rot: 270, displayRot: 270 },
+  H: { rune: "H", image: "assets/harmony.png", rot: 90, displayRot: 90 },
 };
 
 // Track which container is at which visual position
@@ -399,6 +495,9 @@ function rotateRing(delta){
     // Don't update CSS classes - containers are children of ringElement and rotate with it
     // Their visual positions are already correct, and updating classes would cause them to move
     // The CSS classes will be updated when needed (e.g., in swapFlip)
+    
+    // Check if puzzle is solved
+    updateSolutionLight();
   }, 400);
 }
 
@@ -433,6 +532,7 @@ function swapFlip(){
   const bottomAbsoluteRot = bottomDisplayRot + ringRotation;
   
   // Get container and swap ring positions (swapRing is statically positioned)
+  // getBoundingClientRect() returns actual screen positions, which already account for arena scale
   const centerRect = centerEl.getBoundingClientRect();
   const bottomRect = bottomEl.getBoundingClientRect();
   const swapRingRect = swapRingElement.getBoundingClientRect();
@@ -443,7 +543,10 @@ function swapFlip(){
   const bottomCenterY = bottomRect.top + bottomRect.height / 2;
   const swapRingCenterX = swapRingRect.left + swapRingRect.width / 2;
   const swapRingCenterY = swapRingRect.top + swapRingRect.height / 2;
-  const swapRingSize = parseFloat(getComputedStyle(swapRingElement).width);
+  
+  // Use the actual scaled size from getBoundingClientRect() instead of computed style
+  // This ensures calculations account for the arena scale transform
+  const swapRingSize = swapRingRect.width;
   
   // Calculate container positions relative to swap ring center
   const centerOffsetX = centerCenterX - swapRingCenterX;
@@ -463,6 +566,10 @@ function swapFlip(){
   // Move containers to swapRing
   swapRingElement.appendChild(centerEl);
   swapRingElement.appendChild(bottomEl);
+  
+  // Ensure containers are visually on top when inside swapRing
+  centerEl.style.zIndex = '100';
+  bottomEl.style.zIndex = '100';
   
   // Position containers in swap ring
   centerEl.style.left = `${centerLeftPercent}%`;
@@ -510,6 +617,8 @@ function swapFlip(){
     centerEl.style.top = "";
     bottomEl.style.left = "";
     bottomEl.style.top = "";
+    centerEl.style.zIndex = "";
+    bottomEl.style.zIndex = "";
     
     // Swap CSS classes: old center gets old bottom's class, old bottom gets center class
     centerEl.classList.remove("top", "right", "bottom", "left", "center");
@@ -535,6 +644,9 @@ function swapFlip(){
     
     requestAnimationFrame(() => {
       render();
+      
+      // Check if puzzle is solved
+      updateSolutionLight();
       
       // Re-enable full transitions after a frame
       requestAnimationFrame(() => {
@@ -637,26 +749,31 @@ document.getElementById("runeE").addEventListener("click", (e) => {
   e.stopPropagation();
   addRot("E", 90);
   render();
+  updateSolutionLight();
 });
 document.getElementById("runeP").addEventListener("click", (e) => {
   e.stopPropagation();
   addRot("P", 90);
   render();
+  updateSolutionLight();
 });
 document.getElementById("runeO").addEventListener("click", (e) => {
   e.stopPropagation();
   addRot("O", 90);
   render();
+  updateSolutionLight();
 });
 document.getElementById("runeC").addEventListener("click", (e) => {
   e.stopPropagation();
   addRot("C", 90);
   render();
+  updateSolutionLight();
 });
 document.getElementById("runeH").addEventListener("click", (e) => {
   e.stopPropagation();
   addRot("H", 90);
   render();
+  updateSolutionLight();
 });
 
 // Click on swap ring to swap center and bottom (180° flip)
@@ -671,6 +788,9 @@ updateContainerPositions();
 
 // Initial render
 render();
+
+// Check initial solution state
+updateSolutionLight();
 
 // Log arena position and size for easy adjustment
 function logArenaInfo() {
